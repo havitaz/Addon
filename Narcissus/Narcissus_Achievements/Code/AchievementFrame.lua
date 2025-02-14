@@ -1015,7 +1015,7 @@ local function Slice_ReverselyUpdateAchievementCards_Callback(categoryID, startI
         if i <= numCompleted then
             index = i + numIncomplete;
             if i <= NUM_ACHIEVEMENT_CARDS then
-                FormatAchievementCardByIndex(index, id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
+                FormatAchievementCardByIndex(index, id, name, points, completed, year, month, day, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
             end
             ScrollUtil:SetCardData(index, id, description, rewardText);
             numProcessed = i;
@@ -1043,7 +1043,7 @@ local function Slice_ReverselyUpdateAchievementCards(categoryID, startIndex)
             --print("id #"..id)
             if not completed then
                 if i <= NUM_ACHIEVEMENT_CARDS then
-                    FormatAchievementCardByIndex(i, id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
+                    FormatAchievementCardByIndex(i, id, name, points, completed, year, month, day, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
                 end
                 ScrollUtil:SetCardData(i, id, description, rewardText);
                 numProcessed = i;
@@ -1094,7 +1094,7 @@ local function Slice_UpdateToDoList(categoryID, startIndex)
         id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe = DataProvider:GetAchievementInfo(id);
         if i > 0 and id then
             if i <= NUM_ACHIEVEMENT_CARDS then
-                FormatAchievementCardByIndex(i, id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
+                FormatAchievementCardByIndex(i, id, name, points, completed, year, month, day, description, flags, icon, rewardText, isGuild, wasEarnedByMe);
             end
             ScrollUtil:SetCardData(i, id, description, rewardText);
             numProcessed = i;
@@ -2969,7 +2969,7 @@ function UpdateSummaryFrame(breakLoop)
         if id then
             id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild = DataProvider:GetAchievementInfo(id);
             if i <= NUM_ACHIEVEMENT_CARDS then
-                FormatAchievementCardByIndex(i, id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, true);
+                FormatAchievementCardByIndex(i, id, name, points, completed, year, month, day, description, flags, icon, rewardText, isGuild, true);
                 AchievementCards[i].date:SetText( DateUtil:GetPastDays(day, month, year) );
             end
             ScrollUtil:SetCardData(i, id, description, rewardText);
@@ -3811,7 +3811,7 @@ function NarciAchievementLargeCardMixin:UpdateTheme()
     if self.id then
         local visibility = self:IsShown();
         local id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, earnedByMe  = DataProvider:GetAchievementInfo(self.id);
-        FormatAchievementCard(self, id, name, points, completed, month, day, year, description, flags, icon, rewardText, isGuild, earnedByMe);
+        FormatAchievementCard(self, id, name, points, completed, year, month, day, description, flags, icon, rewardText, isGuild, earnedByMe);
         self:SetShown(visibility);
     end
 end
@@ -3868,7 +3868,7 @@ function NarciAchievement_SelectTheme(index)
     local inspectedAchievementID = AchievementCards[-1].id;
     if inspectedAchievementID then
         local id, name, points, completed, month, day, year, description, flags, icon, rewardText = DataProvider:GetAchievementInfo(inspectedAchievementID);
-        FormatAchievementCardByIndex(-1, id, name, points, completed, month, day, year, description, flags, icon, rewardText);
+        FormatAchievementCardByIndex(-1, id, name, points, completed, year, month, day, description, flags, icon, rewardText);
     end
     
     if SummaryFrame:IsVisible() then
