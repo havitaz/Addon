@@ -13,6 +13,7 @@ local LEGACY_ID = 15234;
 local FEAT_OF_STRENGTH_ID = 81;
 --local GUILD_FEAT_OF_STRENGTH_ID = 15093;
 --local GUILD_CATEGORY_ID = 15076;
+local TITLE_REWARD_FORMAT = string.gsub((RENOWN_REWARD_TITLE_NAME_FORMAT or "Title: %s"), "%%s", "");
 
 local sin = math.sin;
 local cos = math.cos;
@@ -25,11 +26,12 @@ local pi = math.pi;
 local floor = math.floor;
 local ceil = math.ceil;
 local After = C_Timer.After;
-local gsub = string.gsub;
 local bband = bit.band;
 local format = string.format;
 local tremove = table.remove;
 local tinsert = table.insert;
+local gsub = string.gsub;
+local find = string.find;
 
 local CreateFrame = CreateFrame;
 local GetAchievementNumCriteria = GetAchievementNumCriteria;
@@ -91,7 +93,7 @@ end
 
 local themeID = 0;
 local showNotEarnedMark = false;
-local isDarkTheme = true;
+local IS_DARK_THEME = true;
 local isGuildView = false;
 local TEXTURE_PATH = "Interface\\AddOns\\Narcissus_Achievements\\Art\\DarkWood\\";
 
@@ -102,7 +104,7 @@ local function ReskinButton(button)
     button.bottom:SetTexture(TEXTURE_PATH.."AchievementCardBackground");
     button.lion:SetTexture(TEXTURE_PATH.."Lion");
     button.mask:SetTexture(TEXTURE_PATH.."AchievementCardBorderMask");
-    local isDarkTheme = isDarkTheme;
+    local isDarkTheme = IS_DARK_THEME;
     button.RewardFrame.background:SetShown(not isDarkTheme);
     button.RewardFrame.rewardNodeLeft:SetShown(isDarkTheme);
     button.RewardFrame.rewardNodeRight:SetShown(isDarkTheme);
@@ -489,24 +491,70 @@ local function AchievementCard_OnClick(self)
 end
 
 local function FormatRewardText(id, rewardText)
-    if isDarkTheme then
-        local itemID = GetRewardItemID(id);
-        if itemID then
-            local itemID, itemType, itemSubType, _, icon, itemClassID, itemSubClassID = C_Item.GetItemInfoInstant(itemID);
-            if itemSubType == "Mount" then
-                rewardText = gsub(rewardText, ".+:(.+)", "|cff808080".. "Mount:" .."|r|cff8950c6".."%1".."|r");
-            elseif itemSubType == "Companion Pets" then
-                rewardText = gsub(rewardText, ".+:(.+)", "|cff808080".. "Pet:" .."|r|cfff2b344".."%1".."|r");
-            else
-                rewardText = "|cffa3d39c"..rewardText.."|r";
+    local rawText = rewardText;
+    local rewardItemID = GetRewardItemID(id);
+    local categoryText, colon, rewardName;
+
+    if rewardItemID then
+        categoryText, colon, rewardName = string.match(rewardText, "(.+)([:：]+)(.+)");
+    end
+
+    if categoryText and colon and rewardName then
+        local itemID, itemType, itemSubType, _, icon, itemClassID, itemSubClassID = C_Item.GetItemInfoInstant(rewardItemID);
+        local itemProcessed;
+        if itemSubType == "Mount" then
+            local mountID = C_MountJournal.GetMountFromItem(itemID);
+            if mountID then
+                local mountName = C_MountJournal.GetMountInfoByID(mountID);
+                if mountName then
+                    categoryText = MOUNT or categoryText;
+                    rewardName = " "..mountName;
+                    itemProcessed = true;
+                end
             end
-            return rewardText, itemID
+        elseif C_ToyBox.GetToyInfo(itemID) ~= nil then
+            categoryText = TOY or categoryText;
+            itemProcessed = true;
         else
-            return ("|cffa3d39c"..rewardText.."|r");      --Pastel Yellow Green
+            local petName = C_PetJournal.GetPetInfoByItemID(rewardItemID);
+            if petName then
+                categoryText = PET or categoryText;
+                rewardName = " "..petName;
+                itemProcessed = true;
+            else
+
+            end
+        end
+
+        if IS_DARK_THEME then
+            rewardText = format("|cff808080%s%s|r|cff8950c6%s|r", categoryText, colon, rewardName);
+        else
+            rewardText = "|cffffd200"..categoryText..colon..rewardName.."|r";
+        end
+
+        if find(rawText, TITLE_REWARD_FORMAT) then
+            if itemProcessed then
+                if IS_DARK_THEME then
+                    rawText = "|cffa3d39c"..rawText.."|r";
+                end
+                rewardText = rawText.."   "..rewardText;
+            else
+                if IS_DARK_THEME then
+                    rewardText = "|cffa3d39c"..rawText.."|r";
+                else
+                    rewardText = rawText;
+                end
+            end
         end
     else
-        return ("|cffffd200"..rewardText.."|r");
+        if IS_DARK_THEME then
+            rewardText = "|cffa3d39c"..rawText.."|r";
+        else
+            rewardText = "|cffffd200"..rewardText.."|r";
+        end
     end
+
+    return rewardText, rewardItemID
 end
 
 local function GetProgressivePoints(achievementID, basePoints)
@@ -562,27 +610,28 @@ local function FormatAchievementCard(button, id, name, points, completed, month,
 
     if IsAccountWide(flags) then
         if completed then
-            if isDarkTheme then
                 headerObject:SetTextColor(0.85, 0.85, 0.85); --(0.427, 0.812, 0.965)(0.4, 0.755, 0.9)
+            if IS_DARK_THEME then
             else
                 headerObject:SetTextColor(1, 1, 1);
             end
         else
             if isDarkTheme then
                 headerObject:SetTextColor(0.4, 0.4, 0.4);
+            if IS_DARK_THEME then
             else
                 headerObject:SetTextColor(0.5, 0.5, 0.5);
             end
         end
     else
         if completed then
-            if isDarkTheme then
+            if IS_DARK_THEME then
                 headerObject:SetTextColor(0.9, 0.82, 0.58);  --(1, 0.91, 0.647); --(0.9, 0.82, 0.58) --(0.851, 0.774, 0.55)
             else
                 headerObject:SetTextColor(1, 1, 1);
             end
         else
-            if isDarkTheme then
+            if IS_DARK_THEME then
                 headerObject:SetTextColor(0.5, 0.46, 0.324);
             else
                 headerObject:SetTextColor(0.5, 0.5, 0.5);
@@ -623,7 +672,7 @@ local function FormatAchievementCard(button, id, name, points, completed, month,
         button.itemID = itemID;
         button.RewardFrame:Show();
     else
-        if isDarkTheme then
+        if IS_DARK_THEME then
             rewardHeight = 2;
         else
             rewardHeight = 8;
@@ -673,7 +722,7 @@ local function FormatAchievementCard(button, id, name, points, completed, month,
             button.isDark = false;
             button.icon:SetDesaturated(false);
             button.points:SetTextColor(0.8, 0.8, 0.8);
-            if isDarkTheme then
+            if IS_DARK_THEME then
                 button.description:SetTextColor(0.72, 0.72, 0.72);
             else
                 button.description:SetTextColor(0, 0, 0);
@@ -695,7 +744,7 @@ local function FormatAchievementCard(button, id, name, points, completed, month,
             button.isDark = true;
             button.icon:SetDesaturated(true);
             button.points:SetTextColor(0.6, 0.6, 0.6);
-            if isDarkTheme then
+            if IS_DARK_THEME then
                 button.description:SetTextColor(0.6, 0.6, 0.6);
             else
                 button.description:SetTextColor(0, 0, 0);
@@ -801,7 +850,7 @@ function ScrollUtil:SetCardData(cardIndex, achievementID, description, rewardTex
     if rewardText and rewardText ~= "" then
         rewardHeight = 22;
     else
-        if isDarkTheme then
+        if IS_DARK_THEME then
             rewardHeight = 2;
         else
             rewardHeight = 8;
@@ -3723,7 +3772,7 @@ function NarciAchievementFrameMixin:UpdatePinCount()
     local HeaderFrame = self.HeaderFrame;
     local total, cap = PinUtil:GetTotal();
     HeaderFrame.totalAchievements:SetText(L["Pinned Entries"]);
-    HeaderFrame.progress:SetText(string.format("%d/%d", total, cap));
+    HeaderFrame.progress:SetText(format("%d/%d", total, cap));
     HeaderFrame.progress:Show();
     HeaderFrame.value:Hide();
     HeaderFrame.percentSign:Hide();
@@ -3775,7 +3824,7 @@ end
 
 function NarciAchievement_ReskinButton(card)
     ReskinButton(card);
-    card.isDarkTheme = isDarkTheme;
+    card.isDarkTheme = IS_DARK_THEME;
 end
 --]]
 
@@ -3826,13 +3875,13 @@ function NarciAchievement_SelectTheme(index)
     NarciAchievementOptions.Theme = index;
 
     if index == 3 then
-        isDarkTheme = true;
+        IS_DARK_THEME = true;
         TEXTURE_PATH = "Interface\\AddOns\\Narcissus_Achievements\\Art\\Flat\\";
     elseif index == 2 then
-        isDarkTheme = false;
+        IS_DARK_THEME = false;
         TEXTURE_PATH = "Interface\\AddOns\\Narcissus_Achievements\\Art\\Classic\\";
     else
-        isDarkTheme = true;
+        IS_DARK_THEME = true;
         TEXTURE_PATH = "Interface\\AddOns\\Narcissus_Achievements\\Art\\DarkWood\\";
     end
 
@@ -3849,7 +3898,7 @@ function NarciAchievement_SelectTheme(index)
     if DIYContainer.cards then
         for i = 1, #DIYContainer.cards do
             ReskinButton(DIYContainer.cards[i]);
-            DIYContainer.cards[i].isDarkTheme = isDarkTheme;
+            DIYContainer.cards[i].isDarkTheme = IS_DARK_THEME;
         end
     end
     DIYContainer:RefreshTheme();
@@ -4113,7 +4162,7 @@ addon.ReskinButton = ReskinButton;
 addon.FormatAchievementCard = FormatAchievementCard;
 
 local function IsDarkTheme()
-    return isDarkTheme;
+    return IS_DARK_THEME;
 end
 
 addon.IsDarkTheme = IsDarkTheme;
