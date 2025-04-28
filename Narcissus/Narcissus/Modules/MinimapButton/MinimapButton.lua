@@ -743,6 +743,8 @@ function NarciMinimapButtonMixin:SetIndependent(state)
 end
 
 function NarciMinimapButtonMixin:Init()
+	self.Init = nil;
+
     local iconSize = 42;
     local cornerRadius = 10;
 
@@ -771,10 +773,21 @@ function NarciMinimapButtonMixin:Init()
     self:SetIndependent();
     self:RegisterEvent("UI_SCALE_CHANGED");
 
-    self.Init = nil;
+
+	if IsAddOnLoaded("ProjectAzilroka") and ProjectAzilroka then
+		local PA = ProjectAzilroka[1];
+		if PA and PA.SMB and PA.SMB.db and PA.SMB.db.Enable then
+			local DummyTexture = self:CreateTexture(nil, "ARTWORK");
+			DummyTexture:Show();
+			DummyTexture:SetAllPoints(true);
+			DummyTexture:SetTexture("Interface\\AddOns\\Narcissus\\Art\\Logos\\Narcissus-32-White.jpg");
+			self.Texture = DummyTexture;
+		end
+	end
 end
 
 function NarciMinimapButtonMixin:GetMenuInfo()
+	--Used in Bridge\Opie.lua
 	return self.menuInfo
 end
 
@@ -831,7 +844,7 @@ do	--Override in DataBroker.lua
 
 		if enableMinimapButton then
 			if self:HasLibDBIcon() then
-				if C_AddOns.IsAddOnLoaded("Leatrix_Plus") then
+				if NarciAPI.IsLeatrixMinimapEnabled() then
 					--Use LibDBIcon instead of our button
 					self:Hide();
 					self:ShowLibDBIcon();

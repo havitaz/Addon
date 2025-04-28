@@ -1,6 +1,7 @@
 local _, addon = ...
 local TransitionAPI = addon.TransitionAPI;
 local RoundToDigit = addon.Math.RoundToDigit;
+local PrivateAPI = addon.PrivateAPI;
 
 local C_Item = C_Item;
 local After = C_Timer.After;
@@ -617,6 +618,18 @@ do
         end
     end
     NarciAPI.GetItemPositionByItemID = GetItemPositionByItemID;
+
+    function PrivateAPI.DoesPlayerHaveAnyItems(itemList)
+        if itemList then
+            local count;
+            for _, itemID in ipairs(itemList) do
+                count = GetItemCount(itemID);
+                if count > 0 then
+                    return true
+                end
+            end
+        end
+    end
 end
 
 
@@ -3018,42 +3031,6 @@ NarciAPI.GetScreenPixelSize = function()
 end
 
 
-
-local UtilityModel, ValidDisplayIDs;
-
-local function DoesCreatureDisplayIDExist(id)
-    if not id then return end;
-
-    if not UtilityModel then
-        ValidDisplayIDs = {};
-
-        UtilityModel = CreateFrame("CinematicModel", nil, UIParent);
-        UtilityModel:SetKeepModelOnHide(true);
-        UtilityModel:SetSize(2, 2);
-        UtilityModel:SetPoint("TOP", UIParent, "BOTTOM", 0, -3);
-        UtilityModel:SetScript("OnModelLoaded", function(self)
-            local displayID = self:GetDisplayInfo();
-            if displayID and displayID ~= 0 then
-                ValidDisplayIDs[displayID] = true;
-                self.displayID = nil;
-            end
-            self:ClearModel();
-        end);
-        UtilityModel:Hide();
-    end
-
-    if ValidDisplayIDs[id] ~= nil then
-        return ValidDisplayIDs[id];
-    else
-        UtilityModel:ClearModel();
-        UtilityModel:SetDisplayInfo(id);
-    end
-end
-
-NarciAPI.DoesCreatureDisplayIDExist = DoesCreatureDisplayIDExist;
-
-
-
 local function PixelPerfectDriver_Update(self)
     local scale = self:GetParent():GetEffectiveScale();
 
@@ -3360,5 +3337,76 @@ do  --11.0 Menu Formatter
         end
 
         return menu
+    end
+end
+
+do  --Model Util
+    local ModelUtil = {};
+    ModelUtil.validDisplayIDs = {};
+    ModelUtil.validFileIDs = {};
+
+    function ModelUtil:CreateUitlityModel()
+        local m = CreateFrame("CinematicModel", nil, UIParent);
+        m:SetKeepModelOnHide(true);
+        m:SetSize(2, 2);
+        m:SetPoint("TOP", UIParent, "BOTTOM", 0, -3);
+        m:Hide();
+        return m
+    end
+
+    function NarciAPI.DoesCreatureDisplayIDExist(id)
+        if not id then return false end;
+
+        if not ModelUtil.displayModel then
+            ModelUtil.displayModel = ModelUtil:CreateUitlityModel();
+            ModelUtil.displayModel:SetScript("OnModelLoaded", function(self)
+                local displayID = self:GetDisplayInfo();
+                if displayID and displayID ~= 0 then
+                    ModelUtil.validDisplayIDs[displayID] = true;
+                end
+                self:ClearModel();
+            end);
+        end
+
+        if ModelUtil.validDisplayIDs[id] ~= nil then
+            return ModelUtil.validDisplayIDs[id];
+        else
+            ModelUtil.displayModel:ClearModel();
+            ModelUtil.displayModel:SetDisplayInfo(id);
+        end
+    end
+
+    function NarciAPI.DoesModelFileExist(file)
+        --Unused. Invalid file sometimes crash the game
+        if (not file) or file == 0 then return false end;
+
+        if not ModelUtil.fileModel then
+            ModelUtil.fileModel = ModelUtil:CreateUitlityModel();
+            ModelUtil.fileModel:SetScript("OnModelLoaded", function(self)
+                local fileID = self:GetModelFileID();
+                if fileID and fileID ~= 0 then
+                    ModelUtil.validFileIDs[fileID] = true;
+                end
+                self:ClearModel();
+            end);
+        end
+
+        if ModelUtil.validFileIDs[file] ~= nil then
+            return ModelUtil.validFileIDs[file];
+        else
+            ModelUtil.fileModel:ClearModel();
+            ModelUtil.fileModel:SetModel(file);
+        end
+    end
+end
+
+do  --AddOn Compatibility
+    function NarciAPI.IsLeatrixMinimapEnabled()
+        if C_AddOns.IsAddOnLoaded("Leatrix_Plus") then
+            if LeaPlusDB and LeaPlusDB["MinimapModder"] == "On" then
+                return true
+            end
+        end
+        return false
     end
 end
