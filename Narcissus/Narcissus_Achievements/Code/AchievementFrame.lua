@@ -610,15 +610,14 @@ local function FormatAchievementCard(button, id, name, points, completed, month,
 
     if IsAccountWide(flags) then
         if completed then
-                headerObject:SetTextColor(0.85, 0.85, 0.85); --(0.427, 0.812, 0.965)(0.4, 0.755, 0.9)
             if IS_DARK_THEME then
+                headerObject:SetTextColor(0.85, 0.85, 0.85); --(0.427, 0.812, 0.965)(0.4, 0.755, 0.9)
             else
                 headerObject:SetTextColor(1, 1, 1);
             end
         else
-            if isDarkTheme then
-                headerObject:SetTextColor(0.4, 0.4, 0.4);
             if IS_DARK_THEME then
+                headerObject:SetTextColor(0.4, 0.4, 0.4);
             else
                 headerObject:SetTextColor(0.5, 0.5, 0.5);
             end
